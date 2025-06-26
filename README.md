@@ -21,7 +21,7 @@
 ### 从源码安装
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/huliuchao/ExcelConverter.git
 cd ExcelConverter
 pip install -e .
 ```
@@ -215,13 +215,13 @@ validators = [
 def validate_field(field_name, value, params, row_data):
     """
     字段级验证（必需方法）
-  
+
     Args:
         field_name: 字段名
         value: 字段值
         params: 验证参数
         row_data: 整行数据
-  
+
     Returns:
         (bool, str): (是否有效, 错误信息)
     """
@@ -304,7 +304,7 @@ local items = {
     },
     [1002] = {
         ItemID = 1002,
-        ItemName = "盾牌", 
+        ItemName = "盾牌",
         Price = 80,
         Attributes = {Attack = 5, Defense = 30, HP = 150}
     }
