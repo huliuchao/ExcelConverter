@@ -1,0 +1,107 @@
+[
+    {
+        "AchievementID": 1001,
+        "AchievementType": "daily",
+        "RewardConfig": [
+            {
+                "ItemID": 1001,
+                "Count": 10,
+                "Probability": 0.8
+            },
+            {
+                "ItemID": 2001,
+                "Count": 100,
+                "Probability": 1.0
+            }
+        ],
+        "Description": "每日登录奖励",
+        "Icon": "daily_login.png"
+    },
+    {
+        "AchievementID": 1002,
+        "AchievementType": "main",
+        "RewardConfig": [
+            {
+                "ItemID": 1002,
+                "Count": 5,
+                "Probability": 1.0
+            },
+            {
+                "ItemID": 2001,
+                "Count": 200,
+                "Probability": 1.0
+            },
+            {
+                "ItemID": 3001,
+                "Count": 1,
+                "Probability": 0.9
+            }
+        ],
+        "Description": "完成主线任务第一章",
+        "Icon": "main_quest_1.png"
+    },
+    {
+        "AchievementID": 1003,
+        "AchievementType": "achievement",
+        "RewardConfig": [
+            {
+                "ItemID": 1003,
+                "Count": 1,
+                "Probability": 0.5
+            },
+            {
+                "ItemID": 2002,
+                "Count": 50,
+                "Probability": 1.0
+            }
+        ],
+        "Description": "击败100个敌人",
+        "Icon": "kill_100.png"
+    },
+    {
+        "AchievementID": 1004,
+        "AchievementType": "event",
+        "RewardConfig": [
+            {
+                "ItemID": 1004,
+                "Count": 20,
+                "Probability": 1.0
+            },
+            {
+                "ItemID": 2001,
+                "Count": 500,
+                "Probability": 1.0
+            },
+            {
+                "ItemID": 3002,
+                "Count": 2,
+                "Probability": 0.8
+            }
+        ],
+        "Description": "参与特殊活动",
+        "Icon": "event_special.png"
+    },
+    {
+        "AchievementID": 1005,
+        "AchievementType": "daily",
+        "RewardConfig": [
+            {
+                "ItemID": 1005,
+                "Count": 3,
+                "Probability": 0.6
+            },
+            {
+                "ItemID": 2001,
+                "Count": 80,
+                "Probability": 1.0
+            },
+            {
+                "ItemID": 2002,
+                "Count": 30,
+                "Probability": 1.0
+            }
+        ],
+        "Description": "每日战斗胜利",
+        "Icon": "daily_battle.png"
+    }
+]

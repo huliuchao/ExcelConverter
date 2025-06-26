@@ -1,0 +1,26 @@
+# 无效配置文件 - 用于测试配置验证
+[input]
+source_dir = "./fixtures/excel"  # 必需字段
+output_dir = "./fixtures/output"
+
+[output]
+format = "invalid_format"  # 不支持的格式
+
+[defaults]
+primary_key = ""  # 空字符串
+separator = ","
+
+# 故意错误的导出配置
+[exports.broken_export]
+# 缺少必需的sources字段
+scope = "invalid_scope"  # 无效的作用域
+sources = []  # 空源列表
+
+fields = [
+    { name = "", scope = "sc" },  # 空字段名
+    { name = "ID", scope = "invalid" }  # 无效作用域
+]
+
+validators = [
+    { field = "nonexistent_field", script = "nonexistent.py" }  # 不存在的字段和脚本
+] 

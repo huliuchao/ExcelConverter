@@ -1,0 +1,33 @@
+# 测试配置文件 - 用于单元测试
+[input]
+source_dir = "./fixtures/excel"
+output_dir = "./fixtures/output"
+
+[output]
+format = "json_array"
+
+[defaults]
+primary_key = "ID"
+separator = ","
+
+[object_schemas.test_attribute]
+description = "Test attribute configuration"
+fields = [
+    { key = "Attack", type = "int" },
+    { key = "Defense", type = "int" }
+]
+
+[exports.test_items]
+sources = [
+    { file = "test_items.xlsx", sheet = "Sheet1" }
+]
+scope = "sc"
+fields = [
+    { name = "ID", scope = "sc" },
+    { name = "Name", scope = "sc" },
+    { name = "Attributes", type = "object:test_attribute", scope = "sc" }
+]
+validators = [
+    { field = "ID", script = "test_validator.py", params = { min_value = 1000, max_value = 2000 } },
+    { field = "Name", script = "test_validator.py" }
+] 

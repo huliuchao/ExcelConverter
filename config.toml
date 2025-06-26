@@ -1,0 +1,231 @@
+# =============================================================================
+# Excel数据转换器配置文件
+# =============================================================================
+#
+# 本配置文件用于控制Excel表格数据转换为Lua、JSON等格式的行为。
+#
+# 配置结构说明：
+# ├── [input]          - 输入配置：Excel文件路径、匹配模式
+# ├── [output]         - 输出配置：格式、编码等
+# ├── [defaults]       - 全局默认值：主键名称、验证选项等，可在具体的导出配置中覆盖
+# ├── [exclude]        - 排除文件列表
+# └── [exports.*]      - 导出配置：每个数据表的转换规则
+#
+# Excel文件格式要求：
+# 第1行：描述信息（不导出）
+# 第2行：字段名称
+# 第3行：字段类型（int, string, float, bool, array<type>, object:schema_name）
+# 第4行开始：数据行
+#
+# 作用域说明：
+# - "s"  = 仅服务器导出（敏感数据、游戏逻辑）
+# - "c"  = 仅客户端导出（UI显示、音效、特效）
+# - "sc" = 服务器+客户端都导出（共用基础数据）
+#
+# =============================================================================
+
+# 输入配置
+[input]
+source_dir = "./excel"           # Excel文件源目录路径
+output_dir = "./output"          # 转换结果输出目录
+file_pattern = "*.xlsx"          # Excel文件匹配模式（支持通配符）
+
+# 输出配置
+[output]
+format = "json_array"            # 输出格式列表，支持 lua、json_array, json_map
+encoding = "utf-8"               # 输出文件编码格式
+
+# 全局默认配置
+[defaults]
+primary_key = "ID"               # 默认主键字段名称（可在各导出中覆盖）
+separator = ","                  # 默认数组分隔符（可在字段级别覆盖）
+key_value_separator = ":"        # 默认对象键值分隔符（可在object_schemas中覆盖）
+validator_dir = "./validators"   # 验证脚本目录路径
+validate_unique_keys = true      # 默认验证主键唯一性，防止数据重复
+validate_schema = true           # 默认验证合并数据源字段兼容性
+stop_on_validation_error = false  # 遇到验证错误时是否停止处理
+
+# 文件排除配置
+[exclude]
+files = [
+    "temp.xlsx",
+    "~*.xlsx"                   # Excel自动生成的临时文件
+]
+
+# =============================================================================
+# 自定义对象类型定义
+# =============================================================================
+# 定义结构化对象，支持两种填写方式：
+# 1. 按顺序填写值：100,50,200,1.5（按fields定义的顺序）
+# 2. key-value格式：attack:100,defense:50,hp:200（支持部分字段和乱序）
+#
+# Excel示例数据：
+# | 字段名     | Attributes       | RewardConfig         |
+# | 类型       | object:attribute | object:reward        |
+# | 数据       | 100,50,200,1.5   | 1001,10,0.8         |
+# =============================================================================
+
+# 属性对象结构定义
+[object_schemas.attribute]
+description = "Character/Item attribute configuration"
+key_value_separator = ":"        # 键值分隔符（key:value格式时）
+fields = [
+    { key = "Attack", type = "int", description = "Attack power" },
+    { key = "Defense", type = "int", description = "Defense power" },
+    { key = "HP", type = "int", description = "Health points" },
+    { key = "Speed", type = "float", description = "Movement speed" }
+]
+
+# 奖励配置对象结构定义
+[object_schemas.reward]
+description = "Reward configuration"
+key_value_separator = "="        # 键值分隔符（key=value格式时），这里覆盖默认配置
+fields = [
+    { key = "ItemID", type = "int", description = "Item ID" },
+    { key = "Count", type = "int", description = "Item count" },
+    { key = "Probability", type = "float", description = "Drop probability", default = 1.0 }
+]
+
+# =============================================================================
+# 数据验证配置
+# =============================================================================
+#
+# 验证脚本接口说明：
+# 支持Python脚本进行复杂的数据验证，脚本需要实现以下函数：
+#
+# def validate_field(field_name, value, field_config, row_data):
+#     """
+#     字段级验证函数
+#     参数：
+#     - field_name: 字段名称
+#     - value: 字段值
+#     - field_config: 字段配置对象
+#     - row_data: 当前行的所有数据
+#     返回：(is_valid: bool, error_message: str)
+#     """
+#     pass
+#
+# def validate_row(row_data, export_config):
+#     """
+#     行级验证函数（可选）
+#     参数：
+#     - row_data: 当前行的所有数据
+#     - export_config: 导出配置对象
+#     返回：(is_valid: bool, error_message: str)
+#     """
+#     pass
+#
+# def validate_dataset(dataset, export_config):
+#     """
+#     数据集级验证函数（可选）
+#     参数：
+#     - dataset: 完整数据集列表
+#     - export_config: 导出配置对象
+#     返回：(is_valid: bool, error_message: str)
+#     """
+#     pass
+#
+# =============================================================================
+# 字段配置详细说明
+# =============================================================================
+#
+# fields 数组中每个字段可配置的属性：
+#
+# 必需属性：
+# - name: 字段名称（必须与Excel第2行的字段名完全一致）
+#
+# 可选属性：
+# - type: 字段类型（优先级高于Excel第3行的类型定义）
+# - scope: 作用域 ("s"/"c"/"sc")，默认继承导出配置的 scope
+# - separator: 数组类型的分隔符，默认使用 defaults.separator
+#
+# 数据类型说明（配置中的type优先，否则从Excel第3行读取）：
+# - int: 整数
+# - float: 浮点数
+# - string: 字符串（也可用于存储JSON字符串）
+# - bool: 布尔值
+# - array<type>: 数组，如 array<int>、array<string>、array<object:attribute>
+# - object:schema_name: 自定义结构化对象（按顺序填值或key:value格式）
+#
+# validators 数组中每个验证器可配置的属性：
+# - field: 字段名称（必须与fields中的name一致）
+# - script: 验证脚本文件名（相对于defaults.validator_dir）
+# - params: 传递给验证脚本的自定义参数（可选）
+#
+# =============================================================================
+# 导出配置区域
+# =============================================================================
+# 每个 [exports.名称] 定义一个导出任务，可以：
+# 1. 单文件导出：一个Excel文件的一个Sheet
+# 2. 多文件合并：多个Excel文件或多个Sheet合并为一个输出
+#
+# 配置项说明：
+# - sources: 数据源列表，每个源包含 file 和 sheet
+# - scope: 作用域 ("s"=服务器, "c"=客户端, "sc"=全部)
+# - primary_key: 主键字段名（可选，默认使用 defaults.primary_key）
+# - validate_*: 验证选项（可选，默认使用 defaults 中的值）
+# - fields: 字段配置列表，包含验证规则、作用域等
+# =============================================================================
+
+# 成就配置示例 - 单文件单Sheet导出
+[exports.achievements]
+sources = [
+    { file = "achievements.xlsx", sheet = "Sheet1" }
+]
+scope = "sc"                     # 作用域：服务器+客户端都导出
+primary_key = "AchievementID"    # 使用自定义主键（覆盖默认的"ID"）
+
+# 字段配置：定义各字段的作用域和类型
+fields = [
+    { name = "AchievementID", type = "int", scope = "sc" },
+    { name = "AchievementType", type = "string", scope = "sc" },
+    { name = "RewardConfig", type = "array<object:reward>", scope = "s", separator = "|" },
+    { name = "Description", scope = "c" }, # 使用Excel第3行的类型定义
+    { name = "Icon", scope = "c" }
+]
+
+# 验证器配置：定义数据验证规则
+# 使用拆解后的独立验证器，每个验证器专注于单一功能
+validators = [
+    # 基础验证
+    { field = "AchievementID", script = "required.py" },                                 # 必填验证
+    { field = "AchievementID", script = "unique.py" },                                   # 唯一性验证
+    { field = "AchievementType", script = "required.py" },                               # 必填验证
+    { field = "Description", script = "required.py" },                                   # 必填验证
+    # 枚举值验证
+    { field = "AchievementType", script = "enum.py", params = { values = ["daily", "main", "achievement", "event"] } },
+    # 长度验证
+    { field = "Description", script = "length.py", params = { min = 5, max = 200 } },   # 描述长度限制
+    { field = "Icon", script = "length.py", params = { min = 1, max = 50 } },           # 图标文件名长度
+    # 数组长度验证
+    { field = "RewardConfig", script = "array_length.py", params = { min = 1, max = 5 } },
+    # 格式验证
+    { field = "Icon", script = "pattern.py", params = { pattern = "^[a-zA-Z0-9_]+\\.(png|jpg|jpeg|gif)$" } },
+    # 复杂业务逻辑验证
+    { field = "RewardConfig", script = "reward_config.py", params = { max_rewards = 5 } },
+    { field = "Icon", script = "resource.py", params = { type = "icon", base_path = "./assets/icons/" } }
+]
+
+# 道具配置示例 - 多文件多Sheet合并导出
+[exports.items]
+sources = [
+    { file = "items.xlsx", sheet = "weapon" },
+    { file = "items.xlsx", sheet = "armor" },
+    { file = "items.xlsx", sheet = "accessory" },
+    { file = "equipment.xlsx", sheet = "special_items" }
+]
+scope = "sc"
+
+# 字段配置：所有数据源必须具有相同的字段结构
+fields = [
+    { name = "ID", type = "int", scope = "sc" },
+    { name = "ItemName", type = "string", scope = "sc" },
+    { name = "ItemType", type = "string", scope = "sc" },
+    { name = "Attributes", type = "object:attribute", scope = "s" },
+    { name = "Icon", scope = "c" },
+    { name = "SpecialEffects", type = "string", scope = "s" }
+]
+
+# 验证器配置：定义数据验证规则
+validators = [
+]
