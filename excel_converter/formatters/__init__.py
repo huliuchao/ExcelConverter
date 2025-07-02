@@ -6,7 +6,7 @@
 from .base import BaseFormatter
 from .lua_formatter import LuaFormatter
 from .json_formatter import JsonFormatter
-from .json_variants import JsonMapFormatter, JsonArrayFormatter
+from .json_variants import JsonMapFormatter, JsonArrayFormatter, JsonPackedFormatter
 
 __all__ = [
     'BaseFormatter',
@@ -14,4 +14,5 @@ __all__ = [
     'JsonFormatter',
     'JsonMapFormatter',
     'JsonArrayFormatter',
+    'JsonPackedFormatter',
 ]

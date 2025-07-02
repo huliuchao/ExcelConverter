@@ -12,7 +12,7 @@ from datetime import datetime
 
 from .config import ConfigManager, ConfigValidator
 from .core import ExcelReader, TypeSystem, DataMerger, DataProcessor
-from .formatters import LuaFormatter, JsonMapFormatter, JsonArrayFormatter
+from .formatters import LuaFormatter, JsonMapFormatter, JsonArrayFormatter, JsonPackedFormatter
 from .utils import ConversionLogger, ConversionError, ProgressLogger
 from .utils.file_utils import ensure_directory
 from . import __version__
@@ -76,7 +76,7 @@ def cli(ctx, config: str, verbose: bool, log_file: Optional[str], version: bool)
 @cli.command()
 @common_options
 @click.option('--export', '-e', help='Specific export to convert (convert all if not specified)')
-@click.option('--format', '-f', type=click.Choice(['lua', 'json_map', 'json_array']), help='Output format (use config default if not specified)')
+@click.option('--format', '-f', type=click.Choice(['lua', 'json_map', 'json_array', 'json_packed']), help='Output format (use config default if not specified)')
 @click.option('--compact', is_flag=True, help='Use compact format (no indentation)')
 @click.option('--scope', '-s', type=click.Choice(['s', 'c', 'sc']), help='Export scope (override config scope)')
 @click.option('--output-dir', '-o', type=click.Path(), help='Output directory (default from config)')
@@ -157,7 +157,8 @@ def convert(ctx, config: str, verbose: bool, log_file: Optional[str], export: Op
         formatters = {
             'lua': LuaFormatter(compact=compact),
             'json_map': JsonMapFormatter(compact=compact),
-            'json_array': JsonArrayFormatter(compact=compact)
+            'json_array': JsonArrayFormatter(compact=compact),
+            'json_packed': JsonPackedFormatter(compact=compact)
         }
         
         progress = ProgressLogger(len(exports_to_process), logger)
@@ -261,6 +262,10 @@ def convert(ctx, config: str, verbose: bool, log_file: Optional[str], export: Op
                 
                 output_format = actual_format
                 formatter = formatters.get(output_format)
+                
+                if output_format == 'json_packed' and formatter:
+                    formatter = JsonPackedFormatter(compact=compact, primary_key=export_config.primary_key)
+                
                 if not formatter:
                     logger.log_error(f"Unsupported output format: {output_format}")
                     logger.log_error(f"Supported formats: {', '.join(formatters.keys())}")

@@ -272,7 +272,7 @@ excel-converter convert [OPTIONS]
 选项：
 
 - `-e, --export`: 指定要转换的导出配置
-- `-f, --format`: 输出格式（lua/json_map/json_array）
+- `-f, --format`: 输出格式（lua/json_map/json_array/json_packed）
 - `--compact`: 使用紧凑格式（无缩进）
 - `-s, --scope`: 作用域过滤（s/c/sc）
 - `-o, --output-dir`: 输出目录（默认：output）
@@ -315,7 +315,7 @@ return items
 
 ### JSON格式
 
-支持两种JSON输出格式：
+支持三种JSON输出格式：
 
 #### JSON映射格式 (`json_map`)
 
@@ -359,7 +359,24 @@ return items
 ]
 ```
 
-两种JSON格式和Lua都支持紧凑模式（使用 `--compact` 参数），输出时不包含缩进和空格。
+#### JSON打包格式 (`json_packed`)
+
+数组形式，主键保留，其他数据打包为JSON字符串，适合运行时动态解析：
+
+```json
+[
+  {
+    "ItemID": 1001,
+    "data": "{\"ItemName\":\"长剑\",\"Price\":100,\"Attributes\":{\"Attack\":50,\"Defense\":10,\"HP\":200}}"
+  },
+  {
+    "ItemID": 1002,
+    "data": "{\"ItemName\":\"盾牌\",\"Price\":80,\"Attributes\":{\"Attack\":5,\"Defense\":30,\"HP\":150}}"
+  }
+]
+```
+
+所有JSON格式和Lua都支持紧凑模式（使用 `--compact` 参数），输出时不包含缩进和空格。
 
 ### 添加新的验证器
 

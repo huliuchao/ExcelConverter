@@ -4,8 +4,9 @@
 """
 
 import pytest
+import json
 from excel_converter.formatters.lua_formatter import LuaFormatter
-from excel_converter.formatters.json_variants import JsonMapFormatter, JsonArrayFormatter
+from excel_converter.formatters.json_variants import JsonMapFormatter, JsonArrayFormatter, JsonPackedFormatter
 
 
 class TestLuaFormatter:
@@ -156,3 +157,187 @@ class TestCompactModeBehavior:
         assert "simple = 123" in readable_result
         assert "key = \"value\"" in readable_result
         assert "{1, 2, 3}" in readable_result
+
+
+class TestJsonPackedFormatter:
+    """测试JSON打包格式化器"""
+    
+    @pytest.fixture
+    def sample_data(self):
+        """测试数据"""
+        return {
+            1001: {
+                "ID": 1001,
+                "Name": "Test Item",
+                "Type": "weapon",
+                "Config": {
+                    "Attack": 100,
+                    "Defense": 50
+                },
+                "Effects": ["fire", "poison"]
+            },
+            1002: {
+                "ID": 1002,
+                "Name": "Another Item",
+                "Type": "armor",
+                "Config": {
+                    "Attack": 20,
+                    "Defense": 200
+                }
+            }
+        }
+    
+    def test_json_packed_formatter_basic(self, sample_data):
+        """测试JSON打包格式化器基本功能"""
+        formatter = JsonPackedFormatter(compact=False, primary_key="ID")
+        result = formatter.format_data(sample_data, "test_items")
+        
+        # 解析JSON结果
+        parsed = json.loads(result)
+        
+        # 检查结构：应该是数组格式
+        assert isinstance(parsed, list)
+        assert len(parsed) == 2
+        
+        # 找到ID为1001的条目
+        item_1001 = None
+        item_1002 = None
+        for item in parsed:
+            if item["ID"] == 1001:
+                item_1001 = item
+            elif item["ID"] == 1002:
+                item_1002 = item
+        
+        assert item_1001 is not None
+        assert item_1002 is not None
+        
+        # 检查ID字段被保留
+        assert item_1001["ID"] == 1001
+        assert item_1002["ID"] == 1002
+        
+        # 检查其他数据被打包到data字段中
+        assert "data" in item_1001
+        assert "data" in item_1002
+        
+        # 解析data字段中的JSON
+        data_1001 = json.loads(item_1001["data"])
+        assert data_1001["Name"] == "Test Item"
+        assert data_1001["Type"] == "weapon"
+        assert data_1001["Config"]["Attack"] == 100
+        assert data_1001["Effects"] == ["fire", "poison"]
+        
+        # 确保ID不在data中（避免重复）
+        assert "ID" not in data_1001
+    
+    def test_json_packed_formatter_compact(self, sample_data):
+        """测试JSON打包格式化器紧凑模式"""
+        formatter = JsonPackedFormatter(compact=True, primary_key="ID")
+        result = formatter.format_data(sample_data, "test_items")
+        
+        # 紧凑模式应该没有缩进和额外空格
+        assert "\n" not in result
+        assert "  " not in result  # 没有双空格
+        
+        # 但数据内容应该保持完整
+        parsed = json.loads(result)
+        
+        # 找到ID为1001的条目
+        item_1001 = None
+        for item in parsed:
+            if item["ID"] == 1001:
+                item_1001 = item
+                break
+        
+        assert item_1001 is not None
+        assert item_1001["ID"] == 1001
+        data_1001 = json.loads(item_1001["data"])
+        assert data_1001["Name"] == "Test Item"
+    
+    def test_json_packed_formatter_custom_primary_key(self):
+        """测试自定义主键"""
+        sample_data = {
+            "item1": {
+                "ItemID": "item1",
+                "Name": "Test Item",
+                "Type": "weapon"
+            },
+            "item2": {
+                "ItemID": "item2", 
+                "Name": "Another Item",
+                "Type": "armor"
+            }
+        }
+        
+        formatter = JsonPackedFormatter(compact=False, primary_key="ItemID")
+        result = formatter.format_data(sample_data, "test_items")
+        
+        parsed = json.loads(result)
+        
+        # 检查结构：应该是数组格式
+        assert isinstance(parsed, list)
+        assert len(parsed) == 2
+        
+        # 找到对应的条目
+        item1 = None
+        item2 = None
+        for item in parsed:
+            if item["ItemID"] == "item1":
+                item1 = item
+            elif item["ItemID"] == "item2":
+                item2 = item
+        
+        assert item1 is not None
+        assert item2 is not None
+        
+        # 检查ItemID被保留为主键
+        assert item1["ItemID"] == "item1"
+        assert item2["ItemID"] == "item2"
+        
+        # 检查其他数据被打包
+        data_item1 = json.loads(item1["data"])
+        assert data_item1["Name"] == "Test Item"
+        assert data_item1["Type"] == "weapon"
+        assert "ItemID" not in data_item1  # 主键不应该在data中重复
+    
+    def test_json_packed_formatter_format_name(self):
+        """测试格式化器名称"""
+        readable_formatter = JsonPackedFormatter(compact=False)
+        compact_formatter = JsonPackedFormatter(compact=True)
+        
+        assert readable_formatter.format_name == "json_packed"
+        assert compact_formatter.format_name == "json_packed_compact"
+    
+    def test_json_packed_empty_data(self):
+        """测试空数据处理"""
+        empty_data = {}
+        formatter = JsonPackedFormatter(compact=False, primary_key="ID")
+        result = formatter.format_data(empty_data, "empty")
+        
+        parsed = json.loads(result)
+        assert parsed == []
+    
+    def test_json_packed_missing_primary_key(self):
+        """测试缺失主键的情况"""
+        sample_data = {
+            "1": {
+                "Name": "No ID Item",
+                "Type": "weapon"
+            }
+        }
+        
+        formatter = JsonPackedFormatter(compact=False, primary_key="ID")
+        result = formatter.format_data(sample_data, "test")
+        
+        parsed = json.loads(result)
+        
+        # 检查结构：应该是数组格式
+        assert isinstance(parsed, list)
+        assert len(parsed) == 1
+        
+        item = parsed[0]
+        # 应该仍然能处理，但主键字段为None或不存在
+        assert "ID" not in item or item.get("ID") is None
+        # 所有数据应该都在data字段中
+        data_1 = json.loads(item["data"])
+        assert data_1["Name"] == "No ID Item"
+        assert data_1["Type"] == "weapon"
